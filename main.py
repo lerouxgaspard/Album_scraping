@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import json
-from datetime import datetime
+import pandas as pd
 
 
 def scrap_albums():
@@ -18,19 +18,15 @@ def scrap_albums():
     def get_titre(title_row):
         """Extrait le titre de l'album"""
         titre_link = title_row.find("a", class_="nav2emph bigger")
-
         if titre_link:
             return titre_link.text.strip()
-
         return None
 
     def get_artiste(title_row):
         """Extrait le nom de l'artiste"""
         all_links = title_row.find_all("a", class_="nav2emph bigger")
-
         if len(all_links) >= 2:
             return all_links[1].text.strip()
-
         return None
 
     def get_year(stats_div):
@@ -54,7 +50,6 @@ def scrap_albums():
                             digits = digits + character
                         if len(digits) == 4:
                             return int(digits)
-
         return None
 
     def get_overall_rank(stats_div):
@@ -83,7 +78,6 @@ def scrap_albums():
 
                         if digits:
                             return int(digits)
-
         return None
 
     def get_pays(title_row):
@@ -92,11 +86,9 @@ def scrap_albums():
             return None
 
         flag_img = title_row.find("img", class_="flag-mini")
-
         if flag_img:
             pays = flag_img.get("title") or flag_img.get("alt")
             return pays
-
         return None
 
     def get_number_of_charts(stats_div):
@@ -113,17 +105,15 @@ def scrap_albums():
             if label_text == "Appears in:":
                 if index < len(metrics):
                     metric_text = metrics[index].text.strip()
-
+                    
                     digits = ""
                     for character in metric_text:
                         if character.isdigit():
                             digits = digits + character
-
+                    
                     if digits:
                         return int(digits)
-
         return None
-
 
     def get_rank_by_year(stats_div):
         """Extrait le rang de l'album pour son année de sortie"""
@@ -141,21 +131,19 @@ def scrap_albums():
                 for character in label_text:
                     if character.isdigit():
                         year_in_label = year_in_label + character
-
+                
                 if len(year_in_label) == 4:
                     if index < len(metrics):
                         metric_text = metrics[index].text.strip()
-
+                        
                         digits = ""
                         for character in metric_text:
                             if character.isdigit():
                                 digits = digits + character
-
+                        
                         if digits:
                             return int(digits)
-
         return None
-
 
     def get_rank_by_decade(stats_div):
         """Extrait le rang de l'album pour sa décennie"""
@@ -171,17 +159,15 @@ def scrap_albums():
             if label_text.startswith("Rank in") and label_text.endswith("s:"):
                 if index < len(metrics):
                     metric_text = metrics[index].text.strip()
-
+                    
                     digits = ""
                     for character in metric_text:
                         if character.isdigit():
                             digits = digits + character
-
+                    
                     if digits:
                         return int(digits)
-
         return None
-
 
     # ========================================
     # CONFIGURATION
@@ -213,7 +199,8 @@ def scrap_albums():
     }
 
     all_albums = []
-    max_pages = 100
+    max_pages = 100 
+    # Si Alec met 1 ici, il peut tester rapidement.
 
     # ========================================
     # SCRAPING
@@ -221,7 +208,7 @@ def scrap_albums():
 
     for decade_name, decade_code in decades.items():
         print(f"{'=' * 50}")
-        print(f":musical_note: {decade_name}...")
+        print(f"🎵 {decade_name}...")
         print(f"{'=' * 50}")
 
         for page_number in range(1, max_pages + 1):
@@ -279,65 +266,64 @@ def scrap_albums():
                             all_albums.append(album)
                             albums_count += 1
 
-                    print(f":white_check_mark: {albums_count} albums")
+                    print(f"✅ {albums_count} albums")
                     time.sleep(2)
 
                 else:
-                    print(f":x: Erreur {response.status_code}")
+                    print(f"❌ Erreur {response.status_code}")
                     break
 
             except Exception as error:
-                print(f":x: {error}")
+                print(f"❌ {error}")
                 break
 
-        print(f":white_check_mark: {decade_name} terminée\n")
+        print(f"✅ {decade_name} terminée\n")
         time.sleep(3)
 
     return all_albums
 
 
 # ========================================
-# SAUVEGARDE JSON
+# SAUVEGARDE JSON + CSV
 # ========================================
 
 if __name__ == "__main__":
     resultats = scrap_albums()
 
     print("\n" + "=" * 70)
-    print(":floppy_disk: SAUVEGARDE DES DONNÉES")
+    print("💾 SAUVEGARDE DES DONNÉES")
     print("=" * 70)
 
-    # Créer un dictionnaire avec métadonnées
-    data_complete = {
-        "metadata": {
-            "date_scraping": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "source": "besteveralbums.com",
-            "nombre_albums": len(resultats),
-            "nombre_decennies": 7,
-            "pages_par_decennie": 100,
-        },
-        "albums": resultats,
-    }
+    # ========================================
+    # 1. SAUVEGARDER EN JSON 
+    # ========================================
+    filename_json = "albums_bestever.json"
 
-    # Sauvegarder en JSON
-    filename = f"albums_bestever_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    with open(filename_json, "w", encoding="utf-8") as f:
+        json.dump(resultats, f, ensure_ascii=False, indent=2)
 
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(data_complete, f, ensure_ascii=False, indent=2)
+    print(f"✅ Fichier JSON créé : {filename_json}")
 
-    print(f":white_check_mark: Fichier JSON créé : {filename}")
-    print(f":bar_chart: {len(resultats)} albums sauvegardés")
+    # ========================================
+    # 2. SAUVEGARDER EN CSV
+    # ========================================
+    filename_csv = "nos_stats.csv"
+    
+    df = pd.DataFrame(resultats)
+    df.to_csv(filename_csv, index=False, encoding="utf-8")
+    
+    print(f"✅ Fichier CSV créé : {filename_csv}")
+    print(f"📊 {len(resultats)} albums sauvegardés")
 
-    # Aperçu des 5 premiers albums
+    # ========================================
+    # APERÇU : Flex total...
+    # ========================================
     print("\n" + "=" * 70)
-    print(":clipboard: APERÇU DES DONNÉES")
+    print("📋 APERÇU DES DONNÉES")
     print("=" * 70)
 
     for index, album in enumerate(resultats[:5], 1):
-        print(
-            f"{index}. {album['album']} - {album['artiste']} ({album['annee']}) - Rang: {album['rang']}"
-        )
+        print(f"{index}. {album['album']} - {album['artiste']} ({album['annee']}) - Rang: {album['rang']}")
 
     print(f"\n... et {len(resultats) - 5} autres albums")
-
-    print("\n:tada: TERMINÉ !")
+    print("\n🎉 TERMINÉ !")
