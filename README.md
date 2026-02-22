@@ -38,6 +38,8 @@ pandas
 
 json
 
+AppScript
+
 ## 📂 Structure du projet
 
 ├── main.py
