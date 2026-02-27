@@ -145,4 +145,4 @@ Respecter les conditions d’utilisation du site source.
 
 ## 👨‍💻 Auteur
 
-Projet de @Codeurfort et @Gaspardleroux réalisé dans une logique d’apprentissage data / scraping / structuration de données culturelles.
+Projet de @Codeurfort et @lerouxgaspard réalisé dans une logique d’apprentissage data / scraping / structuration de données culturelles.
